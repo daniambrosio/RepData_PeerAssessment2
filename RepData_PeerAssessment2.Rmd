@@ -1,0 +1,130 @@
+---
+title: "Severe Weather Events Analysis (health and economic approaches) - 1950 to 2011"
+author: "Daniel Rodrigues Ambrosio - based on NOAA Storm Database"
+date: "May 23, 2015"
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+---
+
+## 1. Synopsis
+
+
+## 2. Overview
+
+The goal of this analysis is to answer the following two questions using the NOAA Storm Database. Across the United States:
+
+1. Which types of events are most harmful with respect to population health?
+
+2. Which types of events have the greatest economic consequences?
+
+The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
+
+## 3. Data Processing
+
+### 3.1 Environment
+
+Being able to reproduce every step of a data analysis is a crucial aspect of the data science. That being said, all the libraries used as support for this analysis are listed below and so is the system information.
+
+````{r init, echo=TRUE}
+library(ggplot2)
+library(gdata)
+
+# variables to handle path, dir and file names
+dir.data <- paste(getwd(),"data",sep="/")
+zipFile <- paste(dir.data,"StormData.csv.bz2",sep="/")
+
+sessionInfo()
+````
+
+### 3.2 Read and Process Data
+The chunck of R Code below should download the storm data zip file from its original location (https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) into a data folder.
+
+```{r download, echo=TRUE, cache=TRUE}
+# if data folder does not exist, create it
+if(!file.exists(dir.data)) {dir.create(dir.data)}
+
+# donwload zip file only if it does not exist locally
+if(!file.exists(zipFile)) {
+    zipFileURL <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+    download.file(zipFileURL, destfile=zipFile, method="curl", mode="wb")
+}
+```
+
+After downloading it read the raw data to be used in the project using the ``read.csv()`` method, that is able to read directly from the b-zipped file. After reading its content into memory, print the sctructure of the data using the ``str()`` function.
+
+```{r read, echo=TRUE, cache=TRUE}
+# uncompress and read the CSV file
+storm.data <- read.csv(zipFile)
+
+# print the str for the data
+str(storm.data)
+```
+
+## 4. Results
+
+This section presents the process of analysis and data processing used to answer the two main questions of this project.
+
+### 4.1 Which types of events are most harmful with respect to population health?
+
+#### 4.1.1 Data Preparation
+
+The Storm Data has two columns that could be used to represent the harm done to the population health: *FATALITIES* and *INJURIES*. Simply adding these columns should suffice to represent one dimension of the study - *amount of harm*. The sum of these two columns is stored in a new column called *humanimpact*.
+
+```{r q1_impact, echo=TRUE}
+storm.data$humanimpact <- storm.data$FATALITIES + storm.data$INJURIES
+```
+
+The other dimension is the type of storm event to be aggregated. After the ``str()`` function call above it was possible to notice that there are 985 types of events, which seems to be a lot of dimensions to be considered - this is the *EVTYPE* column. 
+
+Look further into the data it is possible to notice that there are some minor errors, like leading and trailing spaces, or upper case x lower case versions of the same event and some misspeled or very similar events. To try and group better the events some actions were taken:
+
+- trim all event types (remove leading and trailing spaces)
+
+- turn all event types into upper case
+
+- group similar weather events into a new group that would reflect better the true nature of the data
+
+These new categories are stored into a new column named ``eventtype``.
+
+```{r q1_data_prep, echo=TRUE}
+storm.data$eventtype <- toupper(trim(storm.data$EVTYPE))
+storm.data$eventtype[grep("BLIZZARD|FROST|FREEZE|FREEZING|SNOW|WINTER",storm.data$eventtype)]<-"WINTER GROUP"
+storm.data$eventtype[grep("COASTAL",storm.data$eventtype)]<-"COASTAL GROUP"
+storm.data$eventtype[grep("DROUGHT",storm.data$eventtype)]<-"DROUGHT GROUP"
+storm.data$eventtype[grep("DRY",storm.data$eventtype)]<-"DROUGHT GROUP"
+storm.data$eventtype[grep("FLOOD",storm.data$eventtype)]<-"FLOOD GROUP"
+storm.data$eventtype[grep("HAIL",storm.data$eventtype)]<-"HAIL GROUP"
+storm.data$eventtype[grep("HEAT",storm.data$eventtype)]<-"HEAT GROUP"
+storm.data$eventtype[grep("HEAVY RAIN",storm.data$eventtype)]<-"HEAVY RAIN GROUP"
+storm.data$eventtype[grep("HIGH WIND",storm.data$eventtype)]<-"HIGH WIND GROUP"
+storm.data$eventtype[grep("HURRICANE",storm.data$eventtype)]<-"HURRICANE GROUP"
+storm.data$eventtype[grep("THUNDERSTORM|THUNDEERSTORM|THUDERSTORM|THUNDERESTORM|THUNDERSTROM|THUNDERSTROM|THUNDERTORM|THUNDERTSORM|THUNDESTORM|THUNERSTORM",storm.data$eventtype)]<-"THUNDERSTORM GROUP"
+storm.data$eventtype[grep("TORNADO",storm.data$eventtype)]<-"TORNADO GROUP"
+storm.data$eventtype[grep("TROPICAL STORM|TSTM",storm.data$eventtype)]<-"TSTM GROUP"
+storm.data$eventtype[grep("URBAN",storm.data$eventtype)]<-"URBAN GROUP"
+
+#sort(unique(storm.data$eventtype))
+````
+
+This has reduced the amount of event types to nearly 360, providing a more consistent grouping of events allowing us to aggregate on less groups.
+
+#### 4.1.2 Aggregate and plot the graph 
+
+Now aggregate the data into a new column on preparation to plot the graph that show the human impact (injuries and fatalities) caused by each event type.
+
+```{r q1_aggregate, echo=TRUE, cache=TRUE}
+humanimpact<-aggregate(humanimpact ~ eventtype, data=storm.data, sum, na.rm = TRUE)
+#sum_health <- subset(sum_health, sum_health[,2]!=0)
+#colnames(sum_health) <- c("Event_Type", "Sum_Health_Damage")
+humanimpact <- humanimpact[with(humanimpact, order(-humanimpact, eventtype)),] 
+head(humanimpact, 10)
+
+```
+
+Order the data and plot the graph that will show the top 15 most harmful weather event types when it comes to kill or endanger the lives of people.
+
+```{r q1_plot_aggregate, echo=TRUE}
+```
+
