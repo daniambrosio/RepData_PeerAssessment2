@@ -77,7 +77,7 @@ if(!file.exists(zipFile)) {
 }
 ```
 
-After downloading it read the raw data to be used in the project using the ``read.csv()`` method, that is able to read directly from the b-zipped file. After reading its content into memory, print the structure of the data using the ``str()`` function.
+After downloading it, read the raw data to be used in the project using the ``read.csv()`` method, that is able to read directly from the b-zipped file. After reading its content into memory, print the structure of the data using the ``str()`` function.
 
 
 ```r
@@ -173,7 +173,7 @@ storm.data$eventtype[grep("URBAN",storm.data$eventtype)]<-"URBAN GROUP"
 
 **Note:** This has reduced the amount of event types to nearly 360, providing a more consistent grouping of events allowing us to aggregate on less groups.
 
-#### 3.2.3 Convert Price Units
+#### 3.2.3 Convert Damage Costs Units
 
 There are two fields that represent the economic damages done by severe weather conditions: *PROPDMG* and *CROPDMG*. The values in these columns however are not fully represented since there is another column for each of these ending in *EXP* (i.e *PROPDMGEXP* and *CROPDMGEXP*) which represents a multiplication factor depending on its value, according to the table below:
 
@@ -194,7 +194,7 @@ storm.data$PROPDMGEXP <- toupper(trim(storm.data$PROPDMGEXP))
 storm.data$CROPDMGEXP <- toupper(trim(storm.data$CROPDMGEXP))
 # create prop factor
 storm.data$propfactor<-1 # setting a default value of 1 for multiplication
-storm.data$propfactor[storm.data$PROPDMGEXP=="H"]<-100       # one hundred
+storm.data$propfactor[storm.data$PROPDMGEXP=="H"]<-100        # one hundred
 storm.data$propfactor[storm.data$PROPDMGEXP=="K"]<-1000       # one thousand
 storm.data$propfactor[storm.data$PROPDMGEXP=="M"]<-1000000    # one million 
 storm.data$propfactor[storm.data$PROPDMGEXP=="B"]<-1000000000 # one billion
@@ -214,9 +214,6 @@ storm.data$cropcost <- storm.data$CROPDMG * storm.data$cropfactor
 ## 4. Results
 
 This section presents the process of analysis and data processing used to answer the two main questions of this project.
-
-### 4.1 Which types of events are most harmful with respect to population health?
-
 
 #### 4.1.1 Aggregate and plot the graph 
 
@@ -359,7 +356,7 @@ print(g1)
 
 ### 4.2 Which types of events have the greatest economic consequences?
 
-The 
+The logic used to calculate the economic impact is the same used in the previous sections. We will calculate the cost of damage to properties and crops per group of event types (not the original ones) and then plot a graph where the top 15 with most damage are shown in order.
 
 
 ```r
@@ -391,7 +388,6 @@ head(costimpact.df,10)
 ```r
 costimpact.m <- melt(head(costimpact.df,15),id.vars=c("eventtype"))
 names(costimpact.m) <- c("eventtype", "damage", "cost")
-#head(costimpact.m,15)
 
 g2 <- ggplot(costimpact.m, aes(x = reorder(eventtype,-cost), y = cost,fill=damage))
 g2 <- g2 + geom_bar(stat='identity') +
@@ -403,3 +399,9 @@ print(g2)
 ```
 
 ![](RepData_PeerAssessment2_files/figure-html/q2_plot_aggregate-1.png) 
+
+## 5. Appendix
+
+1. You can find the original R markdown file used to build this document on Daniel Ambrosio's github repository: [Coursera RepData_PeerAssessment2](https://github.com/daniambrosio/RepData_PeerAssessment2)
+
+2. I found help on the work of others in RPubs, specially from this [other nice NOAA study](https://rpubs.com/seversond/81819).
