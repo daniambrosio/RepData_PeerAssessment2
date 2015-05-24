@@ -11,3 +11,9 @@
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
+
+# Cache files
+RepData_PeerAssessment2_cache/
+
+# Reproducible data
+data/
